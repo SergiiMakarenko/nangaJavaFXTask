@@ -4,8 +4,7 @@ import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.log4j.Logger;
 import org.apache.poi.ss.usermodel.Name;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -20,8 +19,9 @@ import sergii.makarenko.domain.ProcessInformationDetail;
 
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.UnmarshalException;
-import java.io.*;
-import java.nio.channels.FileChannel;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -39,13 +39,14 @@ public class UIMethodsServiceImpl implements UIMethodsService {
     @Autowired
     private ProcessHeader processHeader;
     private static final String TEMPLATE = "template.xlsx";
+    private static final Logger LOGGER = Logger.getLogger(UIMethodsServiceImpl.class);
 
 
     /**
      * Show FileChooser for choosing file. Call method for save data into file
      *
-     * @param stage
-     * @param processInformationDetailList
+     * @param stage                        FX stage
+     * @param processInformationDetailList list of ProcessInformationDetail
      */
     @Override
     public void saveToXML(Stage stage, List<ProcessInformationDetail> processInformationDetailList) {
@@ -63,13 +64,13 @@ public class UIMethodsServiceImpl implements UIMethodsService {
                             file, processInformationService.processInformationDetailToProcessInformation(
                                     processInformationDetailList));
                 } catch (JAXBException e) {
-                    showAlert(Alert.AlertType.ERROR,"Error", e.getCause()==null ? e.getLocalizedMessage():
-                            e.getCause().getLocalizedMessage(),"");
+                    showAlert(Alert.AlertType.ERROR, "Error", e.getCause() == null ? e.getLocalizedMessage() :
+                            e.getCause().getLocalizedMessage(), "");
                     e.printStackTrace();
                 }
             } catch (IOException e) {
-                showAlert(Alert.AlertType.ERROR,"Error", e.getCause()==null ? e.getLocalizedMessage():
-                        e.getCause().getLocalizedMessage(),"");
+                showAlert(Alert.AlertType.ERROR, "Error", e.getCause() == null ? e.getLocalizedMessage() :
+                        e.getCause().getLocalizedMessage(), "");
                 e.printStackTrace();
             }
         }
@@ -78,8 +79,8 @@ public class UIMethodsServiceImpl implements UIMethodsService {
     /**
      * Show FileChooser for selecting file with data. Call method for obtain data from file.
      *
-     * @param stage
-     * @return
+     * @param stage FS stage
+     * @return list of ProcessInformation
      */
     @Override
     public List<ProcessInformation> loadFromXML(Stage stage) {
@@ -108,31 +109,38 @@ public class UIMethodsServiceImpl implements UIMethodsService {
     /**
      * Save data into xlsx or xls file
      *
-     * @param stage
-     * @param processInformationDetailList
+     * @param stage                        FX stage
+     * @param processInformationDetailList list of ProcessInformationDetail
      */
     @Override
     public void saveToExcel(Stage stage, List<ProcessInformationDetail> processInformationDetailList) {
-        List<ProcessInformation> processInformationList = processInformationService.processInformationDetailToProcessInformation(
-                processInformationDetailList);
+        LOGGER.info("Start saveToExcel method...");
+        List<ProcessInformation> processInformationList =
+                processInformationService.processInformationDetailToProcessInformation(
+                        processInformationDetailList);
         FileChooser chooserExcelSave = new FileChooser();
         chooserExcelSave.setTitle("Save to Excel");
         FileChooser.ExtensionFilter excelFilter = new FileChooser.ExtensionFilter("EXCEL files", "*.xlsx", "*.xls");
         chooserExcelSave.getExtensionFilters().add(excelFilter);
         File file = chooserExcelSave.showSaveDialog(stage);
         if (file != null) {
+            LOGGER.info("File: " + file.getPath());
             String ext = FilenameUtils.getExtension(file.getName());
             if (!("xls".equals(ext) || "xlsx".equals(ext))) {
-                showAlert(Alert.AlertType.ERROR, "Wrong file extention", "", ext);
+                showAlert(Alert.AlertType.ERROR, "Wrong file extension", "", ext);
             } else {
                 try {
                     ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-                    String pathTemplate = classloader.getResource(TEMPLATE).getPath();
-                    Workbook workbook = new XSSFWorkbook(OPCPackage.open(new FileInputStream(pathTemplate)));
+                    LOGGER.info("Classloader is null " + classloader == null);
+                    if (classloader == null || classloader.getResource(TEMPLATE) == null) {
+                        showAlert(Alert.AlertType.ERROR, "Error", "Classloader error", "");
+                        return;
+                    }
+                    Workbook workbook = new XSSFWorkbook(classloader.getResourceAsStream(TEMPLATE));
                     Sheet sheet = workbook.getSheetAt(0);
                     Iterator<Row> rows = sheet.iterator();
-                    while (rows.hasNext()){
-                        Row row =  rows.next();
+                    while (rows.hasNext()) {
+                        Row row = rows.next();
                         row.getCell(0).setCellValue("");
                         row.getCell(1).setCellValue("");
                     }
@@ -141,7 +149,7 @@ public class UIMethodsServiceImpl implements UIMethodsService {
                         public int compare(ProcessInformation pr1, ProcessInformation pr2) {
                             if (pr1.getProcessMemory() > pr2.getProcessMemory())
                                 return -1;
-                            if(pr1.getProcessMemory() == pr2.getProcessMemory())
+                            if (pr1.getProcessMemory() == pr2.getProcessMemory())
                                 return 0;
                             return 1;
                         }
@@ -155,9 +163,8 @@ public class UIMethodsServiceImpl implements UIMethodsService {
                         row.createCell(0).setCellValue(processInformationList.get(i).getProcessName());
                         row.createCell(1).setCellValue(processInformationList.get(i).getProcessMemory());
                     }
-                    
+
                     Name rangeCell = workbook.getName("name");
-                    String formula = rangeCell.getRefersToFormula();
                     String referenceName = "OFFSET(processes!$A$2,,," +
                             processInformationList.size() + ",1)";
                     rangeCell.setRefersToFormula(referenceName);
@@ -165,20 +172,16 @@ public class UIMethodsServiceImpl implements UIMethodsService {
                     String referenceMemory = "OFFSET(processes!$B$2,,," +
                             processInformationList.size() + ",1)";
                     rangeCell.setRefersToFormula(referenceMemory);
-                    
-                    FileOutputStream fileOut = new FileOutputStream(pathTemplate);
+
+                    FileOutputStream fileOut = new FileOutputStream(file.getPath());
+                    LOGGER.info("Start save to pattern file, file = " + file.getPath());
                     workbook.write(fileOut);
-                    FileChannel sourceChannel = new FileInputStream(pathTemplate).getChannel();
-                    FileChannel destChannel = new FileOutputStream(file.getPath()).getChannel();
-                    destChannel.transferFrom(sourceChannel, 0, sourceChannel.size());
+                    LOGGER.info("Finished writing");
                     fileOut.close();
-                    sourceChannel.close();
-                    destChannel.close();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (InvalidFormatException ife) {
-                    ife.printStackTrace();
                 } catch (IOException e) {
+                    LOGGER.error(e.getCause() == null ? e.getLocalizedMessage() : e.getCause().getLocalizedMessage());
+                    showAlert(Alert.AlertType.ERROR, "Error", "Save to Excel",
+                            e.getCause() == null ? e.getLocalizedMessage() : e.getCause().getLocalizedMessage());
                     e.printStackTrace();
                 }
             }
@@ -188,10 +191,10 @@ public class UIMethodsServiceImpl implements UIMethodsService {
     /**
      * Show alert
      *
-     * @param type
-     * @param title
-     * @param headerText
-     * @param contentText
+     * @param type        type of alert
+     * @param title       title
+     * @param headerText  header
+     * @param contentText main text
      */
     @Override
     public void showAlert(Alert.AlertType type, String title, String headerText, String contentText) {

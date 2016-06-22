@@ -3,7 +3,7 @@ package sergii.makarenko.service;
 import java.io.IOException;
 
 /**
- * Created by serg on 22.06.16.
+ * @author serg
  */
 public class NangaJavaFXException extends IOException {
 

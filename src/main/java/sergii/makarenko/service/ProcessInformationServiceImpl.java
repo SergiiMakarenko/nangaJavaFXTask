@@ -60,7 +60,7 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
                     inputProcesses);
             inputProcesses.close();
         } else {
-            throw new NangaJavaFXException("Unknown OS: "+osName);
+            throw new NangaJavaFXException("Unknown OS: " + osName);
         }
         return processInformationDetailList;
     }
@@ -68,19 +68,19 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * Method for saving ProcessInformation list to file
      *
-     * @param file
-     * @param processInformationList
+     * @param file                   xml file
+     * @param processInformationList list of current process
      * @throws JAXBException
      */
     @Override
     public void saveProcessInformationToXMLFile(File file, List<ProcessInformation> processInformationList)
             throws JAXBException {
-            JAXBContext context = JAXBContext.newInstance(ProcessInformationXML.class);
-            Marshaller m = context.createMarshaller();
-            m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-            ProcessInformationXML wrapper = new ProcessInformationXML();
-            wrapper.setProcesses(processInformationList);
-            m.marshal(wrapper, file);
+        JAXBContext context = JAXBContext.newInstance(ProcessInformationXML.class);
+        Marshaller m = context.createMarshaller();
+        m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+        ProcessInformationXML wrapper = new ProcessInformationXML();
+        wrapper.setProcesses(processInformationList);
+        m.marshal(wrapper, file);
     }
 
     /**
@@ -104,7 +104,7 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
      * Convert a list of ProcessInformationDetail to list of ProcessInformation
      * If processName the same processes will be combined
      *
-     * @param processInformationDetailList
+     * @param processInformationDetailList current process list
      * @return a list of ProcessInformation
      */
     @Override
@@ -171,9 +171,9 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * transform information from BufferReader to ProcessInformationDetail
      *
-     * @param processInformationDetailList
-     * @param inputProcesses
-     * @return
+     * @param processInformationDetailList list of ProcessInformationDetail
+     * @param inputProcesses               buffer reader with processes
+     * @return list of ProcessInformationDetail
      * @throws IOException
      */
     private List<ProcessInformationDetail> getProcessInformationDetailLinux(
@@ -195,8 +195,8 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * Parsing String to  ProcessInformationDetail
      *
-     * @param processLine
-     * @return
+     * @param processLine String with process information
+     * @return ProcessInformationDetail
      * @throws NangaJavaFXException
      */
     private ProcessInformationDetail stringToProcessInformation(String processLine) throws NangaJavaFXException {
@@ -224,10 +224,10 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * Parsing String (Header) for ProcessHeader
      *
-     * @param processLine
+     * @param processLine String with process information
      * @throws NangaJavaFXException
      */
-    private void createHeaderLinux(String processLine) throws NangaJavaFXException{
+    private void createHeaderLinux(String processLine) throws NangaJavaFXException {
         List<String> strings;
         String trimProcessLine = processLine.trim();
         String delims = "[ ]+";
@@ -243,9 +243,9 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * transform information from BufferReader to ProcessInformationDetail
      *
-     * @param processInformationDetailList
-     * @param inputProcesses
-     * @return
+     * @param processInformationDetailList list of ProcessInformationDetail
+     * @param inputProcesses               buffer reader with processes
+     * @return list of ProcessInformationDetail
      * @throws IOException
      */
     private List<ProcessInformationDetail> getProcessInformationDetailWindows(
@@ -272,21 +272,12 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * Parsing String to  ProcessInformationDetail
      *
-     *
-     * @param processLine
-     * @return
+     * @param processLine String with process information
+     * @return ProcessInformationDetail
      * @throws NangaJavaFXException
      */
     private ProcessInformationDetail stringToProcessInformationWindows(String processLine)
             throws NangaJavaFXException {
-        List<String> stringsMemory;
-        String trimProcessLine = processLine.substring(borders[3],
-                processLine.length()).trim();
-        String delims = "[ ]+";
-        stringsMemory = Arrays.asList(trimProcessLine.split(delims));
-        StringBuilder stringsMemoryBuilder = new StringBuilder();
-        for (int i = 0; i < stringsMemory.size() - 1; i++)
-            stringsMemoryBuilder.append(stringsMemory.get(i));
         String mem = processLine.substring(borders[3],
                 processLine.length()).replaceAll("[^\\d]", "");
         long memory;
@@ -295,7 +286,6 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
             memory = Long.parseLong(mem);
             pid = Integer.parseInt(processLine.substring(borders[0], borders[1]).trim());
         } catch (NumberFormatException nfe) {
-            char[] chars = stringsMemoryBuilder.toString().toCharArray();
             throw new NangaJavaFXException(
                     "Number format exception at : " + processLine);
         }
@@ -306,7 +296,7 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * Set fields in ProcessHeader from String
      *
-     * @param processLine
+     * @param processLine String
      */
     private void createHeaderForWindows(String processLine) {
         processHeader.setPidName(processLine.substring(borders[0], borders[1]));
@@ -319,7 +309,7 @@ public class ProcessInformationServiceImpl implements ProcessInformationService 
     /**
      * Fill borders. Need to parsing String in Windows
      *
-     * @param processLine
+     * @param processLine String with process info
      */
     private void fillBorders(String processLine) {
         List<String> strings;

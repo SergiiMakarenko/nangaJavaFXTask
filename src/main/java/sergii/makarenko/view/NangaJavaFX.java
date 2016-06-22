@@ -82,7 +82,7 @@ public class NangaJavaFX extends Application {
      * @param bp - BorderPane
      */
     private void addTableToBorderPane(BorderPane bp) {
-        tableProcessList.setMaxWidth(PRIMARY_STAGE_WIDTH-20);
+        tableProcessList.setMaxWidth(PRIMARY_STAGE_WIDTH - 20);
 
         TableColumn pid = new TableColumn(processHeader.getPidName());
         pid.setCellValueFactory(new PropertyValueFactory<>("processID"));
@@ -160,7 +160,7 @@ public class NangaJavaFX extends Application {
 
         TableColumn processName = new TableColumn("Name");
         processName.setCellValueFactory(new PropertyValueFactory<>("processName"));
-        processName.setMinWidth(200);
+        processName.setMinWidth(COLUMN_WIDTH);
 
         TableColumn processMemoryCurrent = new TableColumn("Current memory use");
         processMemoryCurrent.setCellValueFactory(new PropertyValueFactory<>("memoryNew"));
